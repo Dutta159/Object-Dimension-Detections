@@ -2,6 +2,27 @@ import cv2
 import numpy as np
 import streamlit as st
 from PIL import Image
+import pandas as pd
+import os
+
+def save_dimensions_to_excel(width, height, area, perimeter):
+    file_name = "object_dimensions.xlsx"
+    columns = ["Width (px)", "Height (px)", "Area (px^2)", "Perimeter (px)"]
+    data = pd.DataFrame({
+        "Width (px)": [width],
+        "Height (px)": [height],
+        "Area (px^2)": [area],
+        "Perimeter (px)": [perimeter]
+    })
+    
+    if os.path.exists(file_name):
+        existing_data = pd.read_excel(file_name)
+        data = pd.concat([existing_data, data], ignore_index=True)
+    else:
+        data.to_excel(file_name, index=False, header=True)
+        return
+    
+    data.to_excel(file_name, index=False)
 
 def calculate_object_dimensions_from_frame(frame):
     original = frame.copy()
@@ -37,6 +58,9 @@ def calculate_object_dimensions_from_frame(frame):
         box = cv2.boxPoints(rect)
         box = box.astype(np.int32)
         cv2.drawContours(original, [box], 0, (255, 0, 0), 2)
+        
+        # Save dimensions to Excel
+        save_dimensions_to_excel(w, h, object_area, object_perimeter)
         
         # Display dimensions on the frame
         cv2.putText(original, f"Width: {w}px", (x, y - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
@@ -78,7 +102,7 @@ def main():
         processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(processed_frame)
         
-        stframe.image(img, caption="Processed Frame", use_column_width=True)
+        stframe.image(img, caption="Processed Frame", use_container_width=True)
     
     cap.release()
     cv2.destroyAllWindows()
